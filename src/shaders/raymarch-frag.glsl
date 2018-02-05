@@ -155,7 +155,7 @@ vec4 rainbow()
 
 vec3 addStars(vec2 screenSize)
 {
-    float time = u_TimeScreen.x * 0.08;
+    float time = u_TimeScreen.x * 80.0;
 
     // Background starfield
     float galaxyClump = (pow(noise(fs_UV.xy * (30.0 * screenSize.x)), 3.0) * 0.5 + pow(noise(100.0 + fs_UV.xy * (15.0 * screenSize.x)), 5.0)) / 3.5;
