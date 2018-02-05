@@ -980,6 +980,25 @@ void getSurfaceColor(in float materialFator, vec3 endPoint, out vec4 BasicColor,
 
             if(NoV < 0.3)
                 BasicColor = mix(vec4(backgroundColor, 1.0), BasicColor, NoV * 10.0 / 3.0);
+
+            float DayOfTime = fract(u_TimeScreen.x / 12.0);            
+            
+            if(DayOfTime < 0.0625)
+            {
+                 BasicColor.xyz *= mix(0.2, 1.0, DayOfTime / 0.0625);
+            }
+            else if( 0.625 <= DayOfTime && DayOfTime < 0.6875)
+            {
+                BasicColor.xyz *= mix(1.0, 0.2, (DayOfTime - 0.625) / 0.0625);
+            }
+            else if( 0.6875 <= DayOfTime )
+            {
+                BasicColor.xyz *= 0.2;
+            }
+
+            
+
+
             
             Roughness = 0.05;
         }
