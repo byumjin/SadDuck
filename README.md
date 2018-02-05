@@ -4,19 +4,20 @@
 * pennkey : byumjin
 * name : [Byumjin Kim](https://github.com/byumjin)
 
-![](imgs/main.png)
+![](Images/main.png)
+
+# Live Demo
+
+* [Live Demo Link](https://byumjin.github.io/SadDuck/)
+
+- To compare this with the reference without extra credit features, please turn "PureDuck" option on.  
+
 
 # Comparision
 
 | SDF Duck | Reference |
 | --- | --- |
 | ![](Images/duck.gif) | <img src="http://i.imgur.com/0kvtMLE.gif" width="400px" /> |
-
-
-
-# Live Demo
-
-* [Live Demo Link](https://byumjin.github.io/SadDuck/)
 
 # Overview
 
@@ -30,19 +31,7 @@ Using SDF(Signed Distance Function)s and toon shading, I have created the Duck r
   The all parts of my duck are created by unioning of spheres and ellipsoids (some of them are bended, streched, scaled).
   Making hierarchy structure was good for controlling duck's animations like below.
   
-                  Peak
-          LeftEye  |  RightEye
-                \  |  /
-                  Head
-                   |
-LeftWing 01   --  Body --  RightWing 01
-                 / | \
-       LeftWing02  |  RightWing02
-                 Belly -- Tail
-               /       \
-           LeftLeg   RightLeg
-              |         |               
-         LeftFoot    RightFoot
+ ![](Images/hr.png)
 
 - Head Bob
 
@@ -78,7 +67,13 @@ LeftWing 01   --  Body --  RightWing 01
 
 ## For More...
 
-BlahBlahBlah.....
+I added Day of Time system.
+
+- Sun and Moon
+- Sky gradation
+- Sky objects such as clouds and star fields
+- Land which uses blended textures along noise
+- Fog
 
 ## Reference
 
