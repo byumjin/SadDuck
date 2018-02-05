@@ -8,7 +8,7 @@
 
 # Reference
 
-![](Images/reference.gif)
+<img src="/images/reference.gif" width="400px" />
 
 # Live Demo
 
