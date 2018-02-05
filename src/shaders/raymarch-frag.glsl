@@ -35,28 +35,13 @@ precision highp float;
 #define DEGREE_160 2.7925268031909273230779052295818
 
 #define PLANE 1.0
-#define FLOOR00 2.0
-#define FLOOR001 2.1
-#define FLOOR01 4.0
-#define BALLOON00 6.0
-#define SLOPES 8.0
+#define DUCK_SHADOW 2.0
 
-#define BODY 10.0
-#define FOOT 12.0
-#define MOUTH 14.0
-#define TONGUE 16.0
-#define OUTER_EYE 18.0
-#define INNER_EYE 20.0
-#define CHIN 22.0
+#define POINT_EYE 100.0
+#define PEAK 101.0
+#define DUCK_FOOT 102.0
+#define DUCK_BODY 103.0
 
-#define STAR_PANNEL 24.0
-#define STAR_BG 26.0
-
-#define POINT_EYE 28.0
-#define PEAK 30.0
-#define DUCK_FOOT 32.0
-#define DUCK_BODY 34.0
-#define DUCK_SHADOW 36.0
 
 uniform mat4 u_View;
 uniform mat4 u_ViewProj;
@@ -320,64 +305,6 @@ vec3 Blend_ThornZ(vec3 q, float k)
     return vec3(m*q.xy, q.z);    
 }
 
-vec2 balloon00( vec3 p )
-{
-	//if(p.y > 40.0 || p.y < -5.0)
-	//	return vec2(1000.0, -1.0);
-	
-	vec3 pos = p;
-	
-
-	vec3 c = vec3(124.0, 150.0, 89.0);
-	vec3 q = mod(pos,c)-0.5*c;
-    return  vec2(sdSphere( q, 4.0 ), BALLOON00);
-}
-
-vec2 floor00( vec3 p)
-{
-	//if(p.y > 0.0)
-	//	return vec2(1000.0, -1.0);
-
-	vec3 pos = p - vec3(0.0, 175.0, 0.0);
-
-	vec3 c = vec3(80.0, 400.0, 200.0);
-
-
-	pos.z += int( pos.x / c.x) % 2 == 0 ? u_TimeScreen.x * 0.01 : -u_TimeScreen.x * 0.01;
-
-	
-	vec3 q = mod(pos,c)-0.5*c;
-    return  vec2(sdBox(q, vec3(10.0, 4.0, 24.0)), FLOOR00);
-	//opS(vec2(sdBox(q - vec3(0.0, 10.0, 0.0), vec3(5.0, 0.8, 28.0)), FLOOR001),vec2(sdBox(q, vec3(10.0, 4.0, 24.0)), FLOOR00));
-}
-
-vec2 floor01( vec3 p)
-{
-	if(p.y > 0.0)
-		return vec2(1000.0, -1.0);
-
-	vec3 pos = p;
-
-	vec3 c = vec3(250.0, 100.0, 100.0);
-	vec3 q = mod(pos,c)-0.5*c;
-    return vec2(sdBox(q, vec3(60.0, 2.0, 25.0)), FLOOR01);
-}
-
-vec2 slopes(vec3 p)
-{
-	vec3 pos = p;
-
-	mat4 rot = rotationMatrix(vec3(1.0, 0.0, 1.0), DEGREE_TO_RAD * 45.0 );
-	vec3 q = transpose(mat3(rot))* (pos);	
-
-	vec3 c = vec3(350.0, 20.0, 240.0);
-
-	q = mod(q,c)-0.5*c;
-
-	
-
-	return  vec2(sdCylinder(q, vec2(5.0,100.0) ), SLOPES);
-}
 
 float Spring(vec3 p)
 {
@@ -404,19 +331,6 @@ vec2 Twister(vec3 p)
 	return vec2(Spring(pos), 90.0);
 }
 
-
-vec2 tearDrop(vec3 p)
-{
-    return vec2((p.x - 1.0)*p.x*p.x*p.x + p.y*p.y + p.z*p.z , PEAK);
-}
-
-/*
-vec2 Zitrus(vec3 p, float a, float b)
-{
-    return vec2(  a * p.x * p.x + a *  p.z * p.z - b * pow(p.y, 3.0) * pow(1.0 - p.y, 3.0), PEAK);
-}
-*/
-
 vec2 boundingSphere( in vec4 sph, in vec3 ro, in vec3 rd )
 {
     vec3 oc = ro - sph.xyz;
@@ -441,7 +355,8 @@ vec2 Duck( vec3 p, vec3 ro, vec3 rd )
     if(dis.y < 0.0)
     return vec2(1000.0, -1.0);
 
-    float swingSpeed = 0.0109;
+    float swingSpeed = 10.5;
+    float normalSwing = sin(u_TimeScreen.x * swingSpeed);
 
     //Face
     vec3 headPos = p;
@@ -467,7 +382,7 @@ vec2 Duck( vec3 p, vec3 ro, vec3 rd )
 
     //Body
     vec3 bodyPos = p + vec3(0.0, 2.2, 0.0);
-    mat4 body_rot = rotationMatrix(vec3(0.0, 0.0, 1.0), sin(u_TimeScreen.x * swingSpeed) * 0.1);
+    mat4 body_rot = rotationMatrix(vec3(0.0, 0.0, 1.0), normalSwing * 0.1);
 
     bodyPos = transpose(mat3(body_rot))* bodyPos;
 
@@ -495,13 +410,22 @@ vec2 Duck( vec3 p, vec3 ro, vec3 rd )
     le_00 = Blend_ThornZ(le_00 - vec3(0.0, 0.0, 0.0), 0.2);
     vec2 leftWing00 = vec2( sdEllipsoid(le_00 , vec3(0.6, 1.7, 0.3)), DUCK_BODY );
 
+    //LeftWing_01
+    mat4 rot_le10 = rotationMatrix(vec3(0.0, 0.0, 1.0), DEGREE_TO_RAD * 85.0 );
+    mat4 rot_le11 = rotationMatrix(vec3(0.0, 1.0, 0.0), -DEGREE_TO_RAD * 85.0 ) * rot_le10;
+    mat4 rot_le12 = rotationMatrix(vec3(1.0, 0.0, 0.0), -DEGREE_TO_RAD * 17.0 ) * rot_le11;
+    vec3 le_01 = transpose(mat3(rot_le12))* (bodyPos - vec3( 1.45, -0.6, -0.9));
+    le_01 = Blend_Thorn(le_01, -0.2);
+    le_01 = Blend_ThornZ(le_01 - vec3(0.0, 0.0, 0.0), 0.2);
+    vec2 leftWing01 = vec2( sdEllipsoid(le_01 , vec3(0.4, 1.3333, 0.3)), DUCK_BODY );
+
     //RightWing_00
     mat4 rot_re01 = rotationMatrix(vec3(0.0, 1.0, 0.0), DEGREE_TO_RAD * 85.0 ) * rot_le00;
     mat4 rot_re02 = rotationMatrix(vec3(1.0, 0.0, 0.0), -DEGREE_TO_RAD * 17.0 ) * rot_re01;
-    vec3 re_00 = transpose(mat3(rot_re02))* (bodyPos - vec3( -1.5, 0.2, -1.1));
+    vec3 re_00 = transpose(mat3(rot_re02))* (bodyPos - vec3( -1.4, 0.2, -1.1));
     re_00 = Blend_Thorn(re_00, -0.2);
     re_00 = Blend_ThornZ(re_00 - vec3(0.0, 0.0, 0.0), 0.2);
-    vec2 rightWing00 = vec2( sdEllipsoid(re_00 , vec3(0.4, 1.7, 0.3)), DUCK_BODY );
+    vec2 rightWing00 = vec2( sdEllipsoid(re_00 , vec3(0.6, 1.7, 0.3)), DUCK_BODY );
 
     //RightWing_01
     mat4 rot_re10 = rotationMatrix(vec3(0.0, 0.0, 1.0), DEGREE_TO_RAD * 85.0 );
@@ -525,16 +449,22 @@ vec2 Duck( vec3 p, vec3 ro, vec3 rd )
 
     body = opsU(body, belly, 0.2);
     body = opsU(body, tail, 0.7);    
+
     body = opU(body, leftWing00);
+    body = opU(body, leftWing01);    
     body = opU(body, rightWing00);    
     body = opU(body, rightWing01);
 
+    float legSeed = fract((u_TimeScreen.x* swingSpeed) / TwoPi);
+
+    float rightlegSwing = -sin(   pow (fract( (u_TimeScreen.x)* swingSpeed / (TwoPi)) , 2.0 ) * (TwoPi) );
+    
 
     //RightLeg
     vec3 legPos = p - vec3(0.0, -2.0, -0.5);
     vec3 rightLegPos = legPos - vec3(-0.75, 1.5, 0.0);
 
-    mat4 rightLeg_rot = rotationMatrix(vec3(1.0, 0.0, 0.0), sin(u_TimeScreen.x * swingSpeed) * 1.1 + 0.1);
+    mat4 rightLeg_rot = rotationMatrix(vec3(1.0, 0.0, 0.0), rightlegSwing * 1.1 + 0.1);
 
     rightLegPos = transpose(mat3(rightLeg_rot))* rightLegPos;
     rightLegPos += vec3(0.0, 1.5, 0.0);
@@ -545,7 +475,7 @@ vec2 Duck( vec3 p, vec3 ro, vec3 rd )
 
     mat4 rot_rightfoot00 = rotationMatrix(vec3(0.0, 0.0, 1.0), DEGREE_90 );
     rot_rightfoot00 = rotationMatrix(vec3(0.0, 1.0, 0.0), DEGREE_TO_RAD * 17.5 ) * rot_rightfoot00;
-    rot_rightfoot00 = rotationMatrix(vec3(1.0, 0.0, 0.0), max(-sin(u_TimeScreen.x * swingSpeed) , 0.0) ) * rot_rightfoot00;
+    rot_rightfoot00 = rotationMatrix(vec3(1.0, 0.0, 0.0), max(-rightlegSwing , 0.0) ) * rot_rightfoot00;
 
     vec3 rf_00 = transpose(mat3(rot_rightfoot00))* (rightLegPos - vec3(-0.1, -0.5, 0.0)  );
     vec3 rf_01 = Blend_Thorn(rf_00, 1.7);
@@ -556,10 +486,14 @@ vec2 Duck( vec3 p, vec3 ro, vec3 rd )
     vec2 rightFoot = opsU(rightFoot01, rightFoot02, 0.5);
     rightLeg = opsU(rightLeg, rightFoot, 0.3);
 
+
+    float leftlegSwing = -sin( pow (fract( ((u_TimeScreen.x)* swingSpeed + PI) / (TwoPi)) , 2.0 ) * (TwoPi) );
+
+
     //LeftLeg    
     vec3 leftLegPos = legPos - vec3(0.75, 1.5, 0.0);
 
-    mat4 leftLeg_rot = rotationMatrix(vec3(1.0, 0.0, 0.0), sin(u_TimeScreen.x * swingSpeed - PI) * 1.1 + 0.1);
+    mat4 leftLeg_rot = rotationMatrix(vec3(1.0, 0.0, 0.0), leftlegSwing * 1.1 + 0.1);
 
     leftLegPos = transpose(mat3(leftLeg_rot))* leftLegPos;
     leftLegPos += vec3(0.0, 1.5, 0.0);
@@ -570,7 +504,7 @@ vec2 Duck( vec3 p, vec3 ro, vec3 rd )
 
     mat4 rot_leftfoot00 = rotationMatrix(vec3(0.0, 0.0, 1.0), DEGREE_90 );
     rot_leftfoot00 = rotationMatrix(vec3(0.0, 1.0, 0.0), -DEGREE_TO_RAD * 17.5 ) * rot_leftfoot00;
-    rot_leftfoot00 = rotationMatrix(vec3(1.0, 0.0, 0.0), max(sin(u_TimeScreen.x * swingSpeed), 0.0) ) * rot_leftfoot00;
+    rot_leftfoot00 = rotationMatrix(vec3(1.0, 0.0, 0.0), max(-leftlegSwing, 0.0) ) * rot_leftfoot00;
 
     vec3 lf_00 = transpose(mat3(rot_leftfoot00))* (leftLegPos - vec3(0.1, -0.5, 0.0)  );
     vec3 lf_01 = Blend_Thorn(lf_00, 1.7);
@@ -582,294 +516,35 @@ vec2 Duck( vec3 p, vec3 ro, vec3 rd )
     leftLeg = opsU(leftLeg, leftFoot, 0.3);
 
 
-   
-
-    vec2 result = head;
-
-    result = opsU(result, body, 1.5);
-
+    //peak
     vec3 peakPos = headPos - vec3(0.0, 2.6, 0.8);
-
-    vec2 peak_Body = vec2( sdEllipsoid(peakPos, vec3(0.5, 0.1, 0.5)), PEAK );
+    vec2 peak_Body = vec2( sdEllipsoid(peakPos, vec3(0.6, 0.1, 0.5)), PEAK );
     vec2 peak_Up = vec2( sdEllipsoid(peakPos - vec3(0.0, 0.15, 0.015), vec3(0.1, 0.1, 0.2)), PEAK );
-
     vec2 peak = opsU(peak_Body, peak_Up, 0.45);
-    
-    result = opU(result, peak);
-    
-
-    result = opsU(result, rightLeg, 0.2);
-    result = opsU(result, leftLeg, 0.2);
-
 
     //shadow
 
     vec3 shadowPos = p - vec3(0.0, -2.6, -0.5);
-    vec2 shdowBody = vec2( sdEllipsoid(shadowPos, vec3(0.8, 0.05, 0.7)), DUCK_SHADOW );
+    vec2 shdowBody = vec2( sdEllipsoid(shadowPos - vec3(normalSwing * 0.3, 0.0, -0.25), vec3(0.9, 0.05, 1.2)), DUCK_SHADOW );
+    vec2 shdowLeft = vec2( sdEllipsoid(shadowPos - vec3(0.9 + leftlegSwing*0.3, 0.0, 0.2 + leftlegSwing * 1.5), vec3(0.5, 0.03, 0.5)), DUCK_SHADOW );
+    vec2 shdowRight = vec2( sdEllipsoid(shadowPos - vec3(-0.9 - rightlegSwing*0.3, 0.0, 0.2 + rightlegSwing * 1.5), vec3(0.5, 0.03, 0.5)), DUCK_SHADOW );
 
-    vec2 shdowLeft = vec2( sdEllipsoid(shadowPos - vec3(0.8, 0.0, 2.0), vec3(0.4, 0.03, 0.3)), DUCK_SHADOW );
-    vec2 shdowRight = vec2( sdEllipsoid(shadowPos - vec3(-0.8, 0.0, 2.0), vec3(0.4, 0.03, 0.3)), DUCK_SHADOW );
+   
 
+    vec2 result = head;
+
+    result = opsU(result, body, 1.5);    
+    result = opU(result, peak);
+    
+    result = opsU(result, rightLeg, 0.2);
+    result = opsU(result, leftLeg, 0.2);
+   
     result = opU(result, shdowBody);
     result = opU(result, shdowLeft);
     result = opU(result, shdowRight);
  
     return result;
 }
-
-
-vec2 kirby( vec3 p, vec3 ro, vec3 rd, float upDown)
-{
-  // bounding sphere
-  
-  vec2 dis = boundingSphere( vec4(0.0, -upDown,0.0,1.6), ro, rd );
-
-  if(dis.y < 0.0)
-	return vec2(1000.0, -1.0);  
-
-  //Body
-  vec2 body = vec2( sdSphere(p, 1.0), BODY );
-
-  //Mouth
-  mat4 rot_m00 = rotationMatrix(vec3(0.0, 1.0, 1.0), DEGREE_90 );
-  mat4 rot_m01 = rotationMatrix(vec3(1.0, 0.0, 0.0), -DEGREE_90 ) * rot_m00;
-  vec3 m_00 = transpose(mat3(rot_m00))* (p - vec3( 0.0, -0.25, 1.1));
-  vec2 mouth = vec2( udRoundBox(m_00, vec3(0.08), 0.07), MOUTH );
-
-  //Tongue
-  vec2 tongue = vec2( sdSphere(p - vec3( 0.0, -0.25, 0.75), 0.2), TONGUE );
-
-  //LeftEye
-  mat4 rot_le00 = rotationMatrix(vec3(1.0, 0.0, 0.0), DEGREE_12 );
-  mat4 rot_le01 = rotationMatrix(vec3(0.0, 1.0, 0.0), -DEGREE_12 ) * rot_le00;
-  vec3 le_00 = transpose(mat3(rot_le01))* (p - vec3( 0.19, 0.2, 0.949));
-  le_00 = Blend_Thorn(le_00, -0.4);
-  vec2 leftEye = vec2( sdEllipsoid(le_00 , vec3(0.08, 0.25, 0.03)) , OUTER_EYE );
-
-   //RightEye
-  //mat4 rot_re00 = rotationMatrix(vec3(1.0, 0.0, 0.0), DEGREE_12 );
-  mat4 rot_re01 = rotationMatrix(vec3(0.0, 1.0, 0.0), DEGREE_12 ) * rot_le00;
-  vec3 re_00 = transpose(mat3(rot_re01))* (p - vec3( -0.19, 0.2, 0.949));
-  re_00 = Blend_Thorn(re_00, -0.4);
-  vec2 rightEye = vec2( sdEllipsoid(re_00 , vec3(0.08, 0.25, 0.03)) , OUTER_EYE );
-
-  //LeftInnerEye
-  mat4 rot_lie00 = rotationMatrix(vec3(1.0, 0.0, 0.0), DEGREE_18_5 );
-  mat4 rot_lie01 = rotationMatrix(vec3(0.0, 1.0, 0.0), -DEGREE_12 ) * rot_lie00;
-  vec3 lie_00 = transpose(mat3(rot_lie01))* (p - vec3( 0.19, 0.3, 0.949));
-  lie_00 = Blend_Thorn(lie_00, -0.4);
-  vec2 leftInnerEye = vec2( sdEllipsoid(lie_00 , vec3(0.05, 0.09, 0.01)) , INNER_EYE );
-
-  //RightInnerEye
-  //mat4 rot_rie00 = rotationMatrix(vec3(1.0, 0.0, 0.0), DEGREE_18_5 );
-  mat4 rot_rie01 = rotationMatrix(vec3(0.0, 1.0, 0.0), DEGREE_12 ) * rot_lie00;
-  vec3 rie_00 = transpose(mat3(rot_rie01))* (p - vec3( -0.19, 0.3, 0.949));
-  rie_00 = Blend_Thorn(rie_00, -0.4);
-  vec2 rightInnerEye = vec2( sdEllipsoid(rie_00 , vec3(0.05, 0.09, 0.01)) , INNER_EYE );
-
-  // Pinky Chin
-
-  mat4 rot_rc00 = rotationMatrix(vec3(0.0, 0.0, 1.0), DEGREE_90 );
-  mat4 rot_rc01 = rotationMatrix(vec3(0.0, 1.0, 0.0), DEGREE_24 ) * rot_rc00;
-  mat4 rot_rc02 = rotationMatrix(vec3(1.0, 0.0, 0.0), -DEGREE_10 ) * rot_rc01;
-  vec3 rc_00 = transpose(mat3(rot_rc02))* (p - vec3( -0.4, -0.15, 0.905));
-  rc_00 = Blend_Thorn(rc_00, -0.4);
-  vec2 rightChin = vec2( sdEllipsoid(rc_00 , vec3(0.05, 0.09, 0.01)) , CHIN );
-  
-  //mat4 rot_lc00 = rotationMatrix(vec3(0.0, 0.0, 1.0), DEGREE_TO_RAD * 90.0 );
-  mat4 rot_lc01 = rotationMatrix(vec3(0.0, 1.0, 0.0), -DEGREE_24 ) * rot_rc00;
-  mat4 rot_lc02 = rotationMatrix(vec3(1.0, 0.0, 0.0), -DEGREE_10 ) * rot_lc01;
-  vec3 lc_00 = transpose(mat3(rot_lc02))* (p - vec3( 0.4, -0.15, 0.905));
-  lc_00 = Blend_Thorn(lc_00, -0.4);
-  vec2 leftChin = vec2( sdEllipsoid(lc_00 , vec3(0.05, 0.09, 0.01)) , CHIN );
-
-
-  float rightArmSeed = cos(u_TimeScreen.x * 0.03)*0.4;
-
-  //Right Arm
-  mat4 rot_00 = rotationMatrix(vec3(0.0, 0.0, 1.0), DEGREE_140 + rightArmSeed);
-  vec3 q_00 = transpose(mat3(rot_00))* (p - vec3(-0.8, 0.3, 0.0));
-  vec2 rightArm = vec2( sdEllipsoid(q_00, vec3(0.4, 0.6, 0.4)) , BODY );
-
-  //Left Arm
-  mat4 rot_01 = rotationMatrix(vec3(-1.0, 0.0, 0.0), -DEGREE_30 );
-  vec3 q_01 = transpose(mat3(rot_01))* (p - vec3(0.65, -0.35, 0.4));
-  vec2 leftArm = vec2( sdEllipsoid(q_01, vec3(0.35, 0.6, 0.35)) , BODY );
-  
-  float footSeed = sin(u_TimeScreen.x * 0.01)*0.2;
-
-  //Right Foot
-  mat4 rot_02 = rotationMatrix(vec3(1.0, 0.0, 0.0), DEGREE_160 );
-  mat4 rot_021 = rotationMatrix(vec3(0.0, 1.0, 0.0), DEGREE_80 ) * rot_02;
-  mat4 rot_022 = rotationMatrix(vec3(0.0, 0.0, 1.0), -DEGREE_40 + footSeed ) * rot_021;
-  vec3 q_02 = transpose(mat3(rot_022))* (p - vec3(-0.8, -0.6, 0.4));
-  q_02 = Blend_Thorn(q_02, -1.0);
-  vec2 rightFoot = vec2( sdEllipsoid(q_02, vec3(0.35, 0.6, 0.35)) , FOOT );
-
-  //Left Foot
-  //mat4 rot_03 = rotationMatrix(vec3(1.0, 0.0, 0.0), DEGREE_160 );
-  //mat4 rot_031 = rotationMatrix(vec3(0.0, 1.0, 0.0), DEGREE_80 + footSeed ) * rot_02;
-  mat4 rot_032 = rotationMatrix(vec3(0.0, 0.0, 1.0), -DEGREE_100 - footSeed ) * rot_021;
-  vec3 q_03 = transpose(mat3(rot_032))* (p - vec3(0.8, -0.6, 0.2));
-  q_03 = Blend_Thorn(q_03, -1.0);
-  vec2 leftFoot = vec2( sdEllipsoid(q_03, vec3(0.35, 0.6, 0.35)) , FOOT);
-
-
-  vec2 result = opS(mouth, body, false);
-
-  result = opU(result, leftEye);
-  result = opU(result, rightEye);
-
-  result = opU(result, leftInnerEye);
-  result = opU(result, rightInnerEye);
-  
-  result = opU(result, rightChin);
-  result = opU(result, leftChin);
-  
-
-  result = opU(result, tongue);
-  result = opsU(result, rightArm, 0.02);
-  result = opsU(result, leftArm, 0.02);
-  result = opU(result, rightFoot);
-  result = opU(result, leftFoot);
-
-  return result;
-}
-
-vec2 star( vec3 p, vec3 ro, vec3 rd, float upDown)
-{
-  // bounding sphere
-  vec2 dis = boundingSphere( vec4(0.0, -upDown,0.0,2.4), ro, rd );
-
-  if(dis.y < 0.0)
-	return vec2(1000.0, -1.0);
-
- 
-  vec3 pos = p - vec3(0.0, -1.7, 0.0);
-
-  
-
-  mat4 globalRot = rotationMatrix(vec3(0.0, 1.0, 0.0), u_TimeScreen.x * 0.001 );
-
-  pos = mat3(globalRot) * pos;
-
- 
-
-  float radius = 1.4;
-
-  vec3 starShape = vec3(0.15, 0.7, 0.3);
-
-  float bendFactor = -2.0;
-
-  mat4 rot_star00 = rotationMatrix(vec3(0.0, 0.0, 1.0), DEGREE_90 );
-  vec3 s_00 = transpose(mat3(rot_star00))* (pos - vec3(0.0, 0.0, radius));
-  s_00 = Blend_Thorn(s_00, bendFactor);
-
-  vec2 star00 = vec2( sdEllipsoid(s_00, starShape), STAR_PANNEL );
-
-  mat4 rot_star01 = rotationMatrix(vec3(0.0, 1.0, 0.0), DEGREE_72 ) * rot_star00;
-  vec3 s_01 = transpose(mat3(rot_star01))* (pos - vec3(-0.95105651629515357211643933337938 * radius, 0.0, 0.30901699437494742410229341718282 * radius));
-  s_01 = Blend_Thorn(s_01, bendFactor);
-  vec2 star01 = vec2( sdEllipsoid(s_01, starShape), STAR_PANNEL );
-
-  mat4 rot_star02 = rotationMatrix(vec3(0.0, 1.0, 0.0), -DEGREE_72 ) * rot_star00;
-  vec3 s_02 = transpose(mat3(rot_star02))* (pos - vec3(0.95105651629515357211643933337938 * radius, 0.0, 0.30901699437494742410229341718282 * radius));
-  s_02 = Blend_Thorn(s_02, bendFactor);
-  vec2 star02 = vec2( sdEllipsoid(s_02, starShape), STAR_PANNEL );
-
-  mat4 rot_star03 = rotationMatrix(vec3(0.0, 1.0, 0.0), DEGREE_144 ) * rot_star00;
-  vec3 s_03 = transpose(mat3(rot_star03))* (pos - vec3(-0.58778525229247312916870595463907 * radius, 0.0, -0.80901699437494742410229341718282 * radius));
-  s_03 = Blend_Thorn(s_03, bendFactor);
-  vec2 star03 = vec2( sdEllipsoid(s_03, starShape), STAR_PANNEL );
-
-  mat4 rot_star04 = rotationMatrix(vec3(0.0, 1.0, 0.0), -DEGREE_144 ) * rot_star00;
-  vec3 s_04 = transpose(mat3(rot_star04))* (pos - vec3(0.58778525229247312916870595463907 * radius, 0.0, -0.80901699437494742410229341718282 * radius));
-  s_04 = Blend_Thorn(s_04, bendFactor);
-  vec2 star04 = vec2( sdEllipsoid(s_04, starShape), STAR_PANNEL );
-
-  vec2 center = vec2( sdEllipsoid(pos,  vec3(0.7, 0.4, 0.7) * radius), STAR_PANNEL );
- 
-  float k = 0.3;
-
-  vec2 result = opsU(star00, star01, k);
-  result = opsU(result, star02, k);
-  result = opsU(result, star03, k);
-  result = opsU(result, star04, k);
-  result = opsU(result, center, 0.5);
-
-  return result;
-}
-
-
-vec2 starBG( vec3 p, vec3 ro, vec3 rd, vec3 oriPos, vec3 gapPos)
-{
-  // bounding sphere
-  //vec2 dis = boundingSphere( vec4(gapPos, 2.4), ro, rd );
-
-  //if(dis.y < 0.0)
-  // return vec2(1000.0, -1.0);
-
-  if(oriPos.y > 20.0 || oriPos.y < -10.0 || oriPos.z < -10.0 || oriPos.z > 10.0  || oriPos.x < -30.0 || oriPos.x > 30.0 )
-   return vec2(1000.0, -1.0);
-
- 
-  vec3 pos = p;
-
-  
-
-  mat4 globalRot = rotationMatrix(vec3(1.0, 0.0, 0.0), DEGREE_90 );
-  globalRot = rotationMatrix(vec3(0.0, 1.0, 0.0), u_TimeScreen.x * 0.001 )  * globalRot;
-  pos = mat3(globalRot) * pos;
-
- 
-
-  float radius = 1.4;
-
-  float transSeed = (sin(u_TimeScreen.x * 0.001) + 1.0) * 0.3;
-
-  vec3 starShape = vec3(0.15, 0.7, 0.3 + transSeed);
-
-  float bendFactor = -2.0;
-
-  mat4 rot_star00 = rotationMatrix(vec3(0.0, 0.0, 1.0), DEGREE_90 );
-  vec3 s_00 = transpose(mat3(rot_star00))* (pos - vec3(0.0, 0.0, radius));
-  s_00 = Blend_Thorn(s_00, bendFactor);
-
-  vec2 star00 = vec2( sdEllipsoid(s_00, starShape), STAR_BG );
-
-  mat4 rot_star01 = rotationMatrix(vec3(0.0, 1.0, 0.0), DEGREE_72 ) * rot_star00;
-  vec3 s_01 = transpose(mat3(rot_star01))* (pos - vec3(-0.95105651629515357211643933337938 * radius, 0.0, 0.30901699437494742410229341718282 * radius));
-  s_01 = Blend_Thorn(s_01, bendFactor);
-  vec2 star01 = vec2( sdEllipsoid(s_01, starShape), STAR_BG );
-
-  mat4 rot_star02 = rotationMatrix(vec3(0.0, 1.0, 0.0), -DEGREE_72 ) * rot_star00;
-  vec3 s_02 = transpose(mat3(rot_star02))* (pos - vec3(0.95105651629515357211643933337938 * radius, 0.0, 0.30901699437494742410229341718282 * radius));
-  s_02 = Blend_Thorn(s_02, bendFactor);
-  vec2 star02 = vec2( sdEllipsoid(s_02, starShape), STAR_BG );
-
-  mat4 rot_star03 = rotationMatrix(vec3(0.0, 1.0, 0.0), DEGREE_144 ) * rot_star00;
-  vec3 s_03 = transpose(mat3(rot_star03))* (pos - vec3(-0.58778525229247312916870595463907 * radius, 0.0, -0.80901699437494742410229341718282 * radius));
-  s_03 = Blend_Thorn(s_03, bendFactor);
-  vec2 star03 = vec2( sdEllipsoid(s_03, starShape), STAR_BG );
-
-  mat4 rot_star04 = rotationMatrix(vec3(0.0, 1.0, 0.0), -DEGREE_144 ) * rot_star00;
-  vec3 s_04 = transpose(mat3(rot_star04))* (pos - vec3(0.58778525229247312916870595463907 * radius, 0.0, -0.80901699437494742410229341718282 * radius));
-  s_04 = Blend_Thorn(s_04, bendFactor);
-  vec2 star04 = vec2( sdEllipsoid(s_04, starShape), STAR_BG );
-
-  vec2 center = vec2( sdEllipsoid(pos,  vec3(0.7, 0.4, 0.7) * radius), STAR_BG );
- 
-  float k = 0.3;
-
-  vec2 result = opsU(star00, star01, k);
-  result = opsU(result, star02, k);
-  result = opsU(result, star03, k);
-  result = opsU(result, star04, k);
-  result = opsU(result, center, 0.5);
-
-  return result;
-}
-
 
 vec2 stage( vec3 p, vec3 ro, vec3 rd)
 {
@@ -1022,15 +697,8 @@ float getAO(vec3 endPoint, vec3 normal)
         vec2 VAL = SDF( newEndpoint, endPoint, normal );
 
         //skip when it reachs these surfaces
-        if( OUTER_EYE - 0.5 < VAL.y && CHIN + 0.5 > VAL.y)
-        {
-            
-        }
-        else
-        {
-            float gap = (dist - VAL.x);
-            AO += gap*att;
-        }
+        float gap = (dist - VAL.x);
+        AO += gap*att;        
 
         att *= 0.95;
     }
@@ -1170,79 +838,11 @@ void getSurfaceColor(in float materialFator, vec3 endPoint, out vec4 BasicColor,
 
 		Roughness = 0.05;
 	}
-    /*
-	else if( materialFator < BODY + 0.5 )
+    else if( materialFator < DUCK_SHADOW + 0.5)
 	{
-		BasicColor = vec4(1.0, 0.541176, 0.639216, 1.0);
-		Roughness = 0.8;
-	}
-	else if( materialFator < FOOT + 0.5)
-	{
-		BasicColor = vec4(1.0, 0.1941176, 0.189216, 1.0);
-		Roughness = 0.2;
-	}
-	else if( materialFator < MOUTH + 0.5)
-	{
-		BasicColor = vec4(0.23137254901960784313725490196078, 0.0, 0.03529411764705882352941176470588, 1.0);
-		Roughness = 0.5;
-	}
-	else if( materialFator < TONGUE + 0.5)
-	{
-		BasicColor = vec4(0.51372549019607843137254901960784, 0.03921568627450980392156862745098, 0.06274509803921568627450980392157, 1.0);
-		Roughness = 0.8;
-	}
-	else if( materialFator < OUTER_EYE + 0.5)
-	{
-		float upDown = sin(u_TimeScreen.x * 0.00173) * 0.5;
-	    vec3 diff =	 endPoint.xyz - vec3( 0.22, 0.25 - upDown, 0.95);
-
-		vec3 blue = vec3(0.1137, 0.302, 0.851)* 2.0;
-		vec3 black = vec3(0.0, 0.0, 0.0);
-
-		if(diff.y > 0.0)
-		{
-			BasicColor = vec4(black , 1.0);
-		}
-		else
-		{	
-			float a = pow(abs(diff.y), 1.7) * 4.0;
-			BasicColor = vec4(mix( black, blue, a) , 1.0);
-		}
-
+		BasicColor = vec4(0.3, 0.3, 0.3, 1.0);
 		Roughness = 1.0;
 	}
-	else if( materialFator < INNER_EYE + 0.5)
-	{
-		BasicColor = vec4(vec3(0.9), 1.0);
-		Roughness = 0.7;
-	}
-	else if( materialFator < CHIN + 0.5)
-	{
-		BasicColor = vec4(1.0, 0.3941176, 0.389216, 1.0);
-		Roughness = 0.8;
-	}
-    else if( materialFator < STAR_PANNEL + 0.5)
-	{
-		BasicColor = vec4(1.0, 1.0, 0.189216, 1.0);
-		Roughness = 0.7;
-	}
-    else if( materialFator < STAR_BG + 0.5)
-	{
-		float res = 0.1;
-		float timeSeed = u_TimeScreen.x * 0.01;
-        float sinx = sin((endPoint.x + timeSeed) * res);
-		float siny = sin((endPoint.y - timeSeed)* res);
-        float cosx = cos((endPoint.x + timeSeed)* res);
-
-		float rVal = (sinx + 1.0) * 0.5;
-        float gVal = (cosx + 1.0) * 0.5;
-	    float bVal = (sinx * siny + 1.0) * 0.5;
-
-		BasicColor = vec4(rVal , gVal, bVal, 1.0);
-		Roughness = 0.7;
-	}
-    */
-
     else if( materialFator < POINT_EYE + 0.5)
 	{
 		BasicColor = vec4(0.0, 0.0, 0.0, 1.0);
@@ -1262,16 +862,7 @@ void getSurfaceColor(in float materialFator, vec3 endPoint, out vec4 BasicColor,
     {
         BasicColor = vec4(1.0, 1.0, 1.0, 1.0);
 		Roughness = 0.9;
-    }
-    else if( materialFator < DUCK_SHADOW + 0.5)
-    {
-        BasicColor = vec4(vec3(0.3), 1.0);
-		Roughness = 1.0;
-    }
-
-
-
-    
+    }    
 
     
 

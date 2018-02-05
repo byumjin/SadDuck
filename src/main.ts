@@ -20,11 +20,13 @@ const controls = {
 
   AmbientOcculsion : 1,
   StepLen : 0.12, 
-  Constant: 4.0,
+  Constant: 3.5,
   
   Reflection : 0,
   MaxStep : 40,
   Intensity : 0.6,
+
+  Debug : 10.5,
 };
 
 let screenQuad: Square;
@@ -76,8 +78,8 @@ function main() {
 
   var Toon = gui.addFolder('Toon Shading'); 
 
-  gui.add(controls, 'ToonShading', { Off: 0, On: 1 });
-  gui.add(controls, 'EdgeWidth', 0.0, 1.0).step(0.01);
+  Toon.add(controls, 'ToonShading', { Off: 0, On: 1 });
+  Toon.add(controls, 'EdgeWidth', 0.0, 1.0).step(0.01);
   
 
   var AO = gui.addFolder('AO'); 
@@ -90,6 +92,8 @@ function main() {
   reflc.add(controls, 'MaxStep', 8.0, 64.0).step(1.0);
   reflc.add(controls, 'Intensity', 0.0, 10.0).step(0.01);
 
+  
+  gui.add(controls, 'Debug', 1.0, 15.0).step(0.5);
   
 
   // get canvas and webgl context
@@ -129,6 +133,7 @@ function main() {
     currentTime = Date.now();
 
     deltaTime = currentTime - oldTime;
+    deltaTime *= 0.001;
     elapsedTime += deltaTime;    
 
     oldTime = currentTime;
@@ -162,7 +167,7 @@ function main() {
     raymarchShader.setFactors(vec4.fromValues( controls.ToonShading, controls.SoftShadow, controls.RayMarchStep, controls.ShadowStep));
 
     raymarchShader.setFactorsAO(vec4.fromValues( controls.AmbientOcculsion, controls.StepLen, controls.Constant, controls.EdgeWidth));
-    raymarchShader.setFactorsReflec(vec4.fromValues( controls.Reflection, controls.MaxStep, controls.Intensity, controls.ShadowStep));
+    raymarchShader.setFactorsReflec(vec4.fromValues( controls.Reflection, controls.MaxStep, controls.Intensity, controls.Debug));
 
     raymarchShader.setEnvMap00(triangularScreen.envMap00);
 
