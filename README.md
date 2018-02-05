@@ -6,24 +6,26 @@
 
 ![](Images/main.png)
 
-# Live Demo
+
+
+## Live Demo
 
 * [Live Demo Link](https://byumjin.github.io/SadDuck/)
+To compare this with the reference without extra credit features, please turn "PureDuck" option on.  
 
-- To compare this with the reference without extra credit features, please turn "PureDuck" option on.  
+
+## Overview
+
+Using SDF(Signed Distance Function)s and toon shading, I have created the Duck refered to the reference image above. 
 
 
-# Comparision
+## Comparision
 
 | SDF Duck | Reference |
 | --- | --- |
 | ![](Images/duck.gif) | <img src="http://i.imgur.com/0kvtMLE.gif" width="400px" /> |
 
-# Overview
-
-Using SDF(Signed Distance Function)s and toon shading, I have created the Duck refered to the reference image above. 
-
-## Used Techniques
+### Used Techniques
 
 - Modelling the duck
 
@@ -65,7 +67,7 @@ Using SDF(Signed Distance Function)s and toon shading, I have created the Duck r
   So, I added 3 flat ellipsoids under the duck's feet. And made them move the same way.
 
 
-## For More...
+### For More...
 
 I added Day of Time system.
 
