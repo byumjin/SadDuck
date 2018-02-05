@@ -8,7 +8,7 @@
 
 # Reference
 
-<img src="/images/reference.gif" width="400px" />
+<img src="http://i.imgur.com/0kvtMLE.gif" width="400px" />
 
 # Live Demo
 
