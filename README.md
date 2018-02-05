@@ -33,7 +33,9 @@ Using SDF(Signed Distance Function)s and toon shading, I have created the Duck r
   The all parts of my duck are created by unioning of spheres and ellipsoids (some of them are bended, streched, scaled).
   Making hierarchy structure was good for controlling duck's animations like below.
   
- ![](Images/hr.png)
+ | Hierarchy |
+ | --- | 
+ | ![](Images/hr.png) |
 
 - Head Bob
 
