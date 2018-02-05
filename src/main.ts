@@ -10,13 +10,13 @@ import ShaderProgram, {Shader} from './rendering/gl/ShaderProgram';
 // Define an object with application parameters and button callbacks
 // This will be referred to by dat.GUI's functions that add GUI elements.
 const controls = {
-  // TODO: add any controls you want
+  // TODO: add any controls you want  
   RayMarchStep : 128,
   ShadowStep : 64,
   SoftShadow : 8.0,
 
   ToonShading : 1,
-  EdgeWidth : 0.3,
+  EdgeWidth : 0.4,
 
   AmbientOcculsion : 1,
   StepLen : 0.12, 
@@ -26,7 +26,7 @@ const controls = {
   MaxStep : 40,
   Intensity : 0.6,
 
-  Debug : 10.5,
+  PureDuck : 0,
 };
 
 let screenQuad: Square;
@@ -37,8 +37,17 @@ let currentTime : number;
 let elapsedTime : number;
 let deltaTime : number;
 
+let JukeBox : AudioContext;
+
+function initialize_BGM()
+{
+  console.log(`init Music!`);
+  JukeBox = new AudioContext();
+
+}
+
 function play_single_sound() {
-  var JukeBox = new AudioContext();
+  
   fetch('music/Kevin_MacLeod_Fluffing_a_Duck.mp3')
     .then(r=>r.arrayBuffer())
     .then(b=>JukeBox.decodeAudioData(b))
@@ -49,11 +58,20 @@ function play_single_sound() {
         audio_buf.connect(JukeBox.destination);
         audio_buf.start(0);
         });
+        
 
         console.log(`Music On!`);
 }
 
+function release_BGM()
+{
+  JukeBox.close();
+  console.log(`close Music!`);
+}
+
 function main() {
+
+  initialize_BGM();
 
   play_single_sound();
 
@@ -72,9 +90,10 @@ function main() {
   const gui = new DAT.GUI();
 
   // E.G. gui.add(controls, 'tesselations', 0, 8).step(1);
-  gui.add(controls, 'RayMarchStep', 32.0, 256.0).step(1.0);
-  gui.add(controls, 'ShadowStep', 32.0, 256.0).step(1.0);
-  gui.add(controls, 'SoftShadow', 2.0, 32.0).step(1.0);
+  var BasicOption = gui.addFolder('RayMarching'); 
+  BasicOption.add(controls, 'RayMarchStep', 32.0, 256.0).step(1.0);
+  BasicOption.add(controls, 'ShadowStep', 32.0, 256.0).step(1.0);
+  BasicOption.add(controls, 'SoftShadow', 2.0, 32.0).step(1.0);
 
   var Toon = gui.addFolder('Toon Shading'); 
 
@@ -93,7 +112,7 @@ function main() {
   reflc.add(controls, 'Intensity', 0.0, 10.0).step(0.01);
 
   
-  gui.add(controls, 'Debug', 1.0, 15.0).step(0.5);
+  gui.add(controls, 'PureDuck', { Off: 0, On: 1 });
   
 
   // get canvas and webgl context
@@ -114,7 +133,10 @@ function main() {
 
   triangularScreen = new Triangular(vec3.fromValues(0, 0, 0));
   triangularScreen.create();
-  triangularScreen.bindEnvMap00("src/textures/canivalBG.png");
+  triangularScreen.bindEnvMap00("src/textures/grass.jpg");
+  triangularScreen.bindEnvMap01("src/textures/dirt.jpg");
+
+  triangularScreen.bindCloudMap00("src/textures/clouds.jpg");
 
   const camera = new Camera(vec3.fromValues(-3.7, 2.83528, 12.453), vec3.fromValues(0, 0, 0));
 
@@ -167,9 +189,12 @@ function main() {
     raymarchShader.setFactors(vec4.fromValues( controls.ToonShading, controls.SoftShadow, controls.RayMarchStep, controls.ShadowStep));
 
     raymarchShader.setFactorsAO(vec4.fromValues( controls.AmbientOcculsion, controls.StepLen, controls.Constant, controls.EdgeWidth));
-    raymarchShader.setFactorsReflec(vec4.fromValues( controls.Reflection, controls.MaxStep, controls.Intensity, controls.Debug));
+    raymarchShader.setFactorsReflec(vec4.fromValues( controls.Reflection, controls.MaxStep, controls.Intensity, controls.PureDuck));
 
     raymarchShader.setEnvMap00(triangularScreen.envMap00);
+    raymarchShader.setEnvMap01(triangularScreen.envMap01);
+
+    raymarchShader.setCloudMap00(triangularScreen.clMap00);
 
     // March!
     raymarchShader.draw(triangularScreen);
@@ -193,7 +218,9 @@ function main() {
   camera.updateProjectionMatrix();
 
   // Start the render loop
-  tick();
+  tick();  
 }
 
 main();
+
+//release_BGM();

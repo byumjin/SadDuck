@@ -36,6 +36,9 @@ class ShaderProgram {
   unifFactorsReflec : WebGLUniformLocation;
   
   unifEnvMap00: WebGLUniformLocation;
+  unifEnvMap01: WebGLUniformLocation;
+
+  unifCloudMap00: WebGLUniformLocation;
 
   constructor(shaders: Array<Shader>) {
     this.prog = gl.createProgram();
@@ -65,7 +68,10 @@ class ShaderProgram {
     this.unifFactorsAO = gl.getUniformLocation(this.prog, "u_FactorsAO");
     this.unifFactorsReflec = gl.getUniformLocation(this.prog, "u_FactorsReflec");
 
-    this.unifEnvMap00   = gl.getUniformLocation(this.prog, "u_EnvMap");
+    this.unifEnvMap00   = gl.getUniformLocation(this.prog, "u_EnvMap00");
+    this.unifEnvMap01   = gl.getUniformLocation(this.prog, "u_EnvMap01");
+
+    this.unifCloudMap00   = gl.getUniformLocation(this.prog, "u_Cloud00");
 
   }
 
@@ -132,12 +138,35 @@ class ShaderProgram {
       gl.uniform4fv(this.unifFactorsReflec, vec);
     }
   }
+
   setEnvMap00(texture: WebGLTexture) {
     this.use();
     if (this.unifEnvMap00 !== -1) {
+
+        gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.uniform1i(gl.getUniformLocation(this.prog, "u_EnvMap"), 0);
+        gl.uniform1i(gl.getUniformLocation(this.prog, "u_EnvMap00"), 0);
     }
+}
+
+setEnvMap01(texture: WebGLTexture) {
+  this.use();
+  if (this.unifEnvMap01 !== -1) {
+
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.uniform1i(gl.getUniformLocation(this.prog, "u_EnvMap01"), 1);
+  }
+}
+
+setCloudMap00(texture: WebGLTexture) {
+  this.use();
+  if (this.unifCloudMap00 !== -1) {
+
+      gl.activeTexture(gl.TEXTURE2);
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.uniform1i(gl.getUniformLocation(this.prog, "u_Cloud00"), 2);
+  }
 }
 
 

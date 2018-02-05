@@ -6,9 +6,13 @@
 
 ![](imgs/main.png)
 
-# Reference
+# Comparision
 
-<img src="http://i.imgur.com/0kvtMLE.gif" width="400px" />
+| SDF Duck | Reference |
+| --- | --- |
+| ![](Images/duck.gif) | <img src="http://i.imgur.com/0kvtMLE.gif" width="400px" /> |
+
+
 
 # Live Demo
 

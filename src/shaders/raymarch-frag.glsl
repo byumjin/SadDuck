@@ -42,6 +42,8 @@ precision highp float;
 #define DUCK_FOOT 102.0
 #define DUCK_BODY 103.0
 
+#define SUN 104.0
+#define MOON 105.0
 
 uniform mat4 u_View;
 uniform mat4 u_ViewProj;
@@ -57,11 +59,182 @@ uniform vec4 u_FactorsReflec;
 
 uniform vec4 u_Factors01;
 
-uniform sampler2D u_EnvMap;
+uniform sampler2D u_EnvMap00;
+uniform sampler2D u_EnvMap01;
+
+uniform sampler2D u_Cloud00;
+
+vec3 dawnCol = vec3(0.5, 0.5, 1.0);
+vec3 dawnCol2 = vec3(1.0, 1.0, 0.8);
+
+vec3 midDayCol = vec3(0.52941176470588235294117647058824, 0.81176470588235294117647058823529, 0.90980392156862745098039215686275);
+vec3 midDayCol2 = vec3(0.94901960784313725490196078431373, 1.0, 0.96862745098039215686274509803922);
+
+vec3 twilightCol = vec3(0.09411764705882352941176470588235, 0.06274509803921568627450980392157, 0.21568627450980392156862745098039);
+vec3 twilightCol2 = vec3(0.98431372549019607843137254901961, 0.49411764705882352941176470588235, 0.31372549019607843137254901960784);
+
+vec3 midNightCol = vec3(0.0, 0.0, 0.0);
+vec3 midNightCol2 = vec3(0.0, 0.0, 0.2);
 
 in vec2 fs_UV;
 
 out vec4 out_Col;
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+float hash(float n) { return fract(sin(n) * 1e4); }
+float hash(vec2 p) { return fract(1e4 * sin(17.0 * p.x + p.y * 0.1) * (0.1 + abs(sin(p.y * 13.0 + p.x)))); }
+float noise(float x) { float i = floor(x); float f = fract(x); float u = f * f * (3.0 - 2.0 * f); return mix(hash(i), hash(i + 1.0), u); }
+float noise(vec2 x) { vec2 i = floor(x); vec2 f = fract(x); float a = hash(i); float b = hash(i + vec2(1.0, 0.0)); float c = hash(i + vec2(0.0, 1.0)); float d = hash(i + vec2(1.0, 1.0)); vec2 u = f * f * (3.0 - 2.0 * f); return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y; }
+
+float rand(vec2 co){
+    return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+vec4 rainbow()
+{
+    vec2 UV = vec2(fs_UV.x * 2.0 - 1.0, (1.0 - fs_UV.y) * 2.0 - 1.0);
+    UV.x *= 1.3;
+    UV.y += 0.2;
+
+    float t = sqrt( UV.x * UV.x + UV.y * UV.y);
+
+	t = t * 4.0;
+
+    vec3 color = vec3(0.0);
+
+    float min = 1.7;
+    float gap = 0.13;
+
+    if(t < min )
+    {
+        return vec4(color, 0.0);
+    }
+    else if( t< min + gap )
+    {
+        color = vec3(1.0, 0.0, 0.0);
+    }
+        else if(t< min + gap*2.0)
+        {
+            color = vec3(1.0, 0.5, 0.0);
+        }
+        else if(t< min + gap*3.0)
+        {
+            color = vec3(1.0, 1.0, 0.0);
+        }
+        else if(t< min + gap*4.0)
+        {
+            color = vec3(0.2, 1.0, 0.2);
+        }
+        else if(t< min + gap*5.0)
+        {
+            color = vec3(0.2, 0.2, 1.0);
+        }
+        else if(t< min + gap*6.0)
+        {
+            color = vec3(0.0, 0.1, 0.8);
+        }
+        else if(t< min + gap*7.0)
+        {
+            color = vec3(1.0, 0.0, 1.0);
+        }
+        else
+        {
+            return vec4(color, 0.0);
+        }
+
+
+    float alpha = clamp(UV.y, 0.0, 1.0);
+
+	return mix( vec4(vec3(0.0), alpha), vec4(color, 1.0), alpha);
+}
+
+vec3 addStars(vec2 screenSize)
+{
+    float time = u_TimeScreen.x * 0.08;
+
+    // Background starfield
+    float galaxyClump = (pow(noise(fs_UV.xy * (30.0 * screenSize.x)), 3.0) * 0.5 + pow(noise(100.0 + fs_UV.xy * (15.0 * screenSize.x)), 5.0)) / 3.5;
+    
+    vec3 starColor = vec3(galaxyClump * pow(hash(fs_UV.xy), 1500.0) * 80.0);
+
+    starColor.x *= sqrt(noise(fs_UV.xy) * 1.2);
+    starColor.y *= sqrt(noise(fs_UV.xy * 4.0));
+
+    vec2 delta = (fs_UV.xy - screenSize.xy * 0.5) * screenSize.y * 1.2;  
+    float radialNoise = mix(1.0, noise(normalize(delta) * 20.0 + time * 0.5), 0.12);
+
+    float att = 0.057 * pow(max(0.0, 1.0 - (length(delta) - 0.9) / 0.9), 8.0);
+
+    starColor += radialNoise * min(1.0, att);
+
+    float randSeed = rand(fs_UV);
+
+    return starColor *  (( sin(randSeed + randSeed * time* 0.05) + 1.0)* 0.4 + 0.2);
+}
+
+vec3 calBackground()
+{
+   float DayOfTime = fract(u_TimeScreen.x / 12.0);
+
+   vec3 dawn = mix(dawnCol, dawnCol2, fs_UV.y);
+   vec3 midDay = mix(midDayCol, midDayCol2, fs_UV.y);
+
+  
+
+   vec4 clouds = texture(u_Cloud00, vec2(fs_UV.x - u_TimeScreen.x * 0.1 , fs_UV.y ));
+
+   float cloudAlpha = clouds.x > 0.5 ? 1.0 : 0.0;  
+
+   midDay = mix(midDay, clouds.xyz, cloudAlpha);
+
+   vec3 tw = mix(twilightCol, twilightCol2, fs_UV.y);
+
+   vec4 twclouds = clouds;
+   tw = mix(tw, twclouds.xyz * vec3(1.0, 0.7, 0.2), cloudAlpha );
+
+   vec3 midNight = mix(midNightCol, midNightCol2, fs_UV.y);
+
+   // Background stars
+   midNight += mix(addStars(u_TimeScreen.zw), vec3(0.0), fs_UV.y + 0.4);
+
+   if(DayOfTime < 0.0625)
+   {
+       return mix(midNight, dawn, DayOfTime / 0.0625);
+   }
+   else if(DayOfTime < 0.125)
+   {
+       return dawn;
+   }
+   else if(DayOfTime < 0.1875)
+   {
+       return mix(dawn, midDay, (DayOfTime - 0.125) / 0.0625);
+   }
+   else if(DayOfTime < 0.5)
+   {
+       return midDay;
+   }
+   else if(DayOfTime < 0.5625)
+   {
+       return mix(midDay, tw, (DayOfTime - 0.5) / 0.0625);
+   }
+   else if(DayOfTime < 0.625)
+   {
+        return tw;
+   }
+   else if(DayOfTime < 0.6875)
+   {
+       return mix(tw, midNight, (DayOfTime - 0.625) / 0.0625);
+   }
+   else
+   {
+       return midNight;
+   }
+}
 
 
 vec2 LightingFunGGX_FV(float dotLH, float roughness)
@@ -106,19 +279,6 @@ vec3 GGX_Spec(vec3 Normal, vec3 HalfVec, float Roughness, vec3 BaseColor, vec3 S
 	return D * FV;
 }
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-float hash(float n) { return fract(sin(n) * 1e4); }
-float hash(vec2 p) { return fract(1e4 * sin(17.0 * p.x + p.y * 0.1) * (0.1 + abs(sin(p.y * 13.0 + p.x)))); }
-float noise(float x) { float i = floor(x); float f = fract(x); float u = f * f * (3.0 - 2.0 * f); return mix(hash(i), hash(i + 1.0), u); }
-float noise(vec2 x) { vec2 i = floor(x); vec2 f = fract(x); float a = hash(i); float b = hash(i + vec2(1.0, 0.0)); float c = hash(i + vec2(0.0, 1.0)); float d = hash(i + vec2(1.0, 1.0)); vec2 u = f * f * (3.0 - 2.0 * f); return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y; }
-
-float rand(vec2 co){
-    return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 mat4 rotationMatrix(vec3 axis, float angle)
 {
@@ -365,20 +525,12 @@ vec2 Duck( vec3 p, vec3 ro, vec3 rd )
 
     vec2 head = vec2( sdEllipsoid(headPos - vec3(0.0, 2.8, 0.0), vec3(0.85)), DUCK_BODY );   
 
-
-    
-
-
     //eyes
     vec2 leftEye = vec2( sdSphere(headPos - vec3(0.45, 3.0, 0.7), 0.07), POINT_EYE );
     vec2 rightEye = vec2( sdSphere(headPos - vec3(-0.45, 3.0, 0.7), 0.07), POINT_EYE );
 
     head = opU(head, leftEye);
     head = opU(head, rightEye); 
-
-    
-   
-
 
     //Body
     vec3 bodyPos = p + vec3(0.0, 2.2, 0.0);
@@ -422,8 +574,8 @@ vec2 Duck( vec3 p, vec3 ro, vec3 rd )
     //RightWing_00
     mat4 rot_re01 = rotationMatrix(vec3(0.0, 1.0, 0.0), DEGREE_TO_RAD * 85.0 ) * rot_le00;
     mat4 rot_re02 = rotationMatrix(vec3(1.0, 0.0, 0.0), -DEGREE_TO_RAD * 17.0 ) * rot_re01;
-    vec3 re_00 = transpose(mat3(rot_re02))* (bodyPos - vec3( -1.4, 0.2, -1.1));
-    re_00 = Blend_Thorn(re_00, -0.2);
+    vec3 re_00 = transpose(mat3(rot_re02))* (bodyPos - vec3( -1.4, 0.2, -0.9));
+    re_00 = Blend_Thorn(re_00, -0.15);
     re_00 = Blend_ThornZ(re_00 - vec3(0.0, 0.0, 0.0), 0.2);
     vec2 rightWing00 = vec2( sdEllipsoid(re_00 , vec3(0.6, 1.7, 0.3)), DUCK_BODY );
 
@@ -431,7 +583,7 @@ vec2 Duck( vec3 p, vec3 ro, vec3 rd )
     mat4 rot_re10 = rotationMatrix(vec3(0.0, 0.0, 1.0), DEGREE_TO_RAD * 85.0 );
     mat4 rot_re11 = rotationMatrix(vec3(0.0, 1.0, 0.0), DEGREE_TO_RAD * 85.0 ) * rot_re10;
     mat4 rot_re12 = rotationMatrix(vec3(1.0, 0.0, 0.0), -DEGREE_TO_RAD * 17.0 ) * rot_re11;
-    vec3 re_01 = transpose(mat3(rot_re12))* (bodyPos - vec3( -1.45, -0.6, -0.9));
+    vec3 re_01 = transpose(mat3(rot_re12))* (bodyPos - vec3( -1.45, -0.6, -0.8));
     re_01 = Blend_Thorn(re_01, -0.2);
     re_01 = Blend_ThornZ(re_01 - vec3(0.0, 0.0, 0.0), 0.2);
     vec2 rightWing01 = vec2( sdEllipsoid(re_01 , vec3(0.4, 1.3333, 0.3)), DUCK_BODY );
@@ -533,17 +685,36 @@ vec2 Duck( vec3 p, vec3 ro, vec3 rd )
 
     vec2 result = head;
 
+    
     result = opsU(result, body, 1.5);    
     result = opU(result, peak);
     
     result = opsU(result, rightLeg, 0.2);
     result = opsU(result, leftLeg, 0.2);
-   
+
+       
     result = opU(result, shdowBody);
     result = opU(result, shdowLeft);
-    result = opU(result, shdowRight);
- 
+    result = opU(result, shdowRight); 
+       
+    
     return result;
+}
+
+vec2 SunMoon( vec3 p, vec3 ro, vec3 rd)
+{
+    vec3 center = p; 
+
+    mat4 rot = rotationMatrix(vec3(0.0, 0.0, 1.0), fract( (u_TimeScreen.x - 4.0) / 12.0) * TwoPi );
+    vec3 sun = transpose(mat3(rot))* (center );
+    sun -= vec3(0.0, 50.0, 0.0);
+
+    vec3 moon = sun + vec3(0.0, 100.0, 0.0);
+    mat4 rotMoon = rotationMatrix(vec3(0.0, 1.0, 0.0), -DEGREE_90 );
+    moon = transpose(mat3(rotMoon))* (moon );
+    moon = Blend_Thorn(moon, 0.7);
+
+    return opU( vec2( sdSphere( sun, 2.0 ), SUN), vec2( sdEllipsoid( moon, vec3(1.0, 2.6, 1.0) ), MOON));
 }
 
 vec2 stage( vec3 p, vec3 ro, vec3 rd)
@@ -565,27 +736,15 @@ vec2 SDF( vec3 p, vec3 ro, vec3 rd )
   float upDown = sin(u_TimeScreen.x * 0.00173) * 0.5;
 
   vec3 pos = p;
-  //pos.y += upDown;
-
 
   result = Duck(pos, ro, rd);
-
-
-  //result = kirby(pos, ro, rd, upDown);
-  //result = opU(result, star(pos, ro, rd, upDown));
-
-  //repeat BG obj
-  vec3 bg_pos = p;
-  bg_pos.xy += vec2(u_TimeScreen.x * 0.0051173);
-  bg_pos.x += cos( u_TimeScreen.x * 0.004173) * 4.0;
-
-  vec3 c = vec3(20.0, 20.0, 20.0);
-  bg_pos = mod(bg_pos,c)-0.5*c;
-  
-  vec3 gapPos = bg_pos - p;  
-
-  //result = opU(result, starBG(bg_pos, ro, rd, p, gapPos));  
   result = opU(result, stage(p - vec3(0.0, -42.8, 0.0), ro, rd));
+
+  if(u_FactorsReflec.w < 0.5)
+  {
+    result = opU(result, stage(p - vec3(0.0, -42.8, 0.0), ro, rd));
+    result = opU(result, SunMoon(p - vec3(0.0, -42.8, -10.0), ro, rd));
+  }
 
   return result;
 }
@@ -763,30 +922,6 @@ vec4 rayMarching(vec3 viewVec, vec3 eyePos, vec3 lightVec, out bool isHit, out v
 	return vec4(endPoint, -1.0);
 }
 
-vec3 addStars(vec2 screenSize)
-{
-    float time = u_TimeScreen.x * 0.08;
-
-    // Background starfield
-    float galaxyClump = (pow(noise(fs_UV.xy * (30.0 * screenSize.x)), 3.0) * 0.5 + pow(noise(100.0 + fs_UV.xy * (15.0 * screenSize.x)), 5.0)) / 3.5;
-    
-    vec3 starColor = vec3(galaxyClump * pow(hash(fs_UV.xy), 1500.0) * 80.0);
-
-    starColor.x *= sqrt(noise(fs_UV.xy) * 1.2);
-    starColor.y *= sqrt(noise(fs_UV.xy * 4.0));
-
-    vec2 delta = (fs_UV.xy - screenSize.xy * 0.5) * screenSize.y * 1.2;  
-    float radialNoise = mix(1.0, noise(normalize(delta) * 20.0 + time * 0.5), 0.12);
-
-    float att = 0.057 * pow(max(0.0, 1.0 - (length(delta) - 0.9) / 0.9), 8.0);
-
-    starColor += radialNoise * min(1.0, att);
-
-    float randSeed = rand(fs_UV);
-
-    return starColor *  (( sin(randSeed + randSeed * time* 0.05) + 1.0)* 0.4 + 0.2);
-}
-
 vec2 getNDC(vec2 uv)
 {
 	return vec2(uv.x * 2.0 - 1.0, (1.0 - uv.y) * 2.0 - 1.0);
@@ -814,29 +949,46 @@ float SphericalPhi(vec3 v)
 	return (p < 0.0f) ? (p + TwoPi) : p;
 }
 
-void getSurfaceColor(in float materialFator, vec3 endPoint, out vec4 BasicColor, out float Roughness  )
+
+//http://www.iquilezles.org/www/articles/fog/fog.htm
+vec3 applyFog( in vec3  rgb,       // original color of the pixel
+               in float distance ) // camera to point distance
+{
+    float fogAmount = 1.0 - exp( -distance* 0.05 );
+    vec3  fogColor  = vec3(0.5,0.6,0.7);
+    return mix( rgb, fogColor, fogAmount );
+}
+
+void getSurfaceColor(in float materialFator, vec3 endPoint, out vec4 BasicColor, out float Roughness, float NoV, vec3 backgroundColor )
 {
 	if(materialFator < 0.0)
 	{
 		BasicColor = vec4(0.0);
 		Roughness = 1.0;
 	}    
-	else if( materialFator < PLANE + 0.5 )
+	else if( materialFator < PLANE + 0.5)
 	{
-		float checker = checkersGradBox(vec2(endPoint.x, endPoint.z));	
-        if(checker > 0.5)
+        if(u_FactorsReflec.w < 0.5)
         {
-            BasicColor = vec4(1.0, 0.541176, 0.639216, 1.0);
+            vec3 rotatedPoint = vec3(endPoint);
+
+            rotatedPoint.z += u_TimeScreen.x * 10.5;
+
+            vec2 UV = vec2(rotatedPoint.x, rotatedPoint.z);
+
+            BasicColor = mix( texture(u_EnvMap00, UV * 0.2), texture(u_EnvMap01, UV * 0.2),  noise(UV) - 0.1 );
+
+            if(NoV < 0.3)
+                BasicColor = mix(vec4(backgroundColor, 1.0), BasicColor, NoV * 10.0 / 3.0);
+            
+            Roughness = 0.05;
         }
         else
         {
-            BasicColor = vec4(1.0, 1.0, 0.3, 1.0);
+            BasicColor = vec4(1.0);
+            Roughness = 1.0;
         }
-
-		//checker = max(checker, 0.2);	
-		//BasicColor = vec4(checker, checker, checker, 1.0);
-
-		Roughness = 0.05;
+        
 	}
     else if( materialFator < DUCK_SHADOW + 0.5)
 	{
@@ -862,7 +1014,21 @@ void getSurfaceColor(in float materialFator, vec3 endPoint, out vec4 BasicColor,
     {
         BasicColor = vec4(1.0, 1.0, 1.0, 1.0);
 		Roughness = 0.9;
+    } 
+    else if( materialFator < SUN + 0.5)
+    {
+        BasicColor = vec4(1.0, 0.7, 0.0, 1.0);
+		Roughness = 0.9;
+    } 
+    else if( materialFator < MOON + 0.5)
+    {
+        BasicColor = vec4(1.0, 1.0, 0.0, 1.0);
+		Roughness = 0.9;
     }    
+
+
+
+
 
     
 
@@ -926,6 +1092,9 @@ vec4 rainbow(float time, float resolution, float rainbowFreq, float rainbowSpeed
 	return vec4(color, alpha);
 }
 
+
+
+
 void main() {
 	// TODO: make a Raymarcher!
 	out_Col = vec4(0.0, 0.0, 0.0, 1.0);
@@ -935,7 +1104,7 @@ void main() {
 	//get ViewDir from ScreenSpace
 	
 	vec3 viewVec = getViewVecFromScreenSpace(fs_UV, eyePos);
-	vec3 lightVec = normalize(vec3(0.0, 1.0, 0.2));
+	vec3 lightVec = normalize(vec3(0.0, 1.0, 1.0));
 
 	float epsilon = 2.0/(u_TimeScreen.w) * 0.25;
 
@@ -953,16 +1122,21 @@ void main() {
 	vec4 BasicColor = vec4(1.0, 0.5, 0.0, 1.0);
 	float Roughness;
 
-    getSurfaceColor(materialFator, endPoint.xyz, BasicColor, Roughness);
+    float NoV = dot(normalVec, -viewVec);
+    
+    vec3 backgroundColor = calBackground();
 
-	
-	
-	vec4 SpecularColor = vec4(1.0);
-	
 
+    getSurfaceColor(materialFator, endPoint.xyz, BasicColor, Roughness, NoV, backgroundColor);
 	
+    vec3 color;
 
-	vec3 color = vec3(0.5, 0.5, 1.0);
+    if(u_FactorsReflec.w < 0.5)
+        color = backgroundColor;
+    else
+        color = vec3(1.0);
+
+	vec4 SpecularColor = vec4(1.0);	
 
     //Shading
     if(materialFator > 0.0)
@@ -971,8 +1145,6 @@ void main() {
         if(u_Factors.x > 0.5)
         {
             //edge
-            float NoV = dot(normalVec, -viewVec);
-
             if( ( materialFator > POINT_EYE - 0.5 )  &&  (NoV < u_FactorsAO.w || AO < 0.3) )
             {
                 color = vec3(0.0);
@@ -1011,14 +1183,14 @@ void main() {
                 {
                     vec4 ReflectionColor;
                     float refRoughness;
-                    getSurfaceColor(reflectInfo.w, reflectInfo.xyz, ReflectionColor, refRoughness);
+                    getSurfaceColor(reflectInfo.w, reflectInfo.xyz, ReflectionColor, refRoughness, NoV, backgroundColor);
                     
                     color += BasicColor.xyz * ReflectionColor.xyz * energyConservation * u_FactorsReflec.z;
                 }	
 
                 //AO
                 if(u_FactorsAO.x > 0.5)
-                color *= AO;
+                    color *= AO;
             }
 
             //shadow
@@ -1042,17 +1214,10 @@ void main() {
             rainbowColor = mix(rainbow(u_TimeScreen.x * 0.117, 128.0, 4.8, -0.01, 0.2, 3.0, -0.02, vec2(1.0, 1.0), vec2(0.0, -0.3), 0.6), rainbowColor, rainbowColor.w);
             color += rainbowColor.xyz;
 
-            // Background stars
-            color += mix(addStars(u_TimeScreen.zw), rainbowColor.xyz, rainbowColor.w);
+            
             */
         }
     }
-    
-    
-	
-	
-	
-	
 
 	out_Col = vec4(color, 1.0);
 }

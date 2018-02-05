@@ -9,7 +9,9 @@ abstract class Drawable {
   bufNor: WebGLBuffer;
 
   envMap00: WebGLTexture;
-  
+  envMap01: WebGLTexture;
+
+  clMap00: WebGLTexture;  
 
   idxBound: boolean = false;
   posBound: boolean = false;
@@ -17,6 +19,9 @@ abstract class Drawable {
   norBound: boolean = false;
 
   envMap00Bound: boolean = false;
+  envMap01Bound: boolean = false;
+
+  clMap00Bound: boolean = false;
 
   abstract create() : void;
 
@@ -27,6 +32,9 @@ abstract class Drawable {
     gl.deleteBuffer(this.bufNor);
 
     gl.deleteTexture(this.envMap00);
+    gl.deleteTexture(this.envMap01);
+
+    gl.deleteTexture(this.clMap00);
   }
 
   generateIdx() {
@@ -51,6 +59,9 @@ abstract class Drawable {
 
   generateTexture() {
     this.envMap00Bound = true;
+    this.envMap01Bound = true;
+
+    this.clMap00Bound = true;
   }
 
   bindIdx(): boolean {
@@ -94,7 +105,7 @@ abstract class Drawable {
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-      gl.generateMipmap(gl.TEXTURE_2D);
+      //gl.generateMipmap(gl.TEXTURE_2D);
       gl.bindTexture(gl.TEXTURE_2D, null);
       gl.activeTexture(gl.TEXTURE0);
     }
@@ -102,6 +113,52 @@ abstract class Drawable {
     image.src = url;
 
     this.envMap00 = texture;
+  }
+
+  bindEnvMap01(url:string)
+  {   
+    const texture = gl.createTexture();
+
+    const image = new Image();
+    image.onload = function()
+    {
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+      //gl.generateMipmap(gl.TEXTURE_2D);
+      gl.bindTexture(gl.TEXTURE_2D, null);
+      gl.activeTexture(gl.TEXTURE1);
+    }
+
+    image.src = url;
+
+    this.envMap01 = texture;
+  }
+
+  bindCloudMap00(url:string)
+  {   
+    const texture = gl.createTexture();
+
+    const image = new Image();
+    image.onload = function()
+    {
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+      //gl.generateMipmap(gl.TEXTURE_2D);
+      gl.bindTexture(gl.TEXTURE_2D, null);
+      gl.activeTexture(gl.TEXTURE2);
+    }
+
+    image.src = url;
+
+    this.clMap00 = texture;
   }
 
   elemCount(): number {
