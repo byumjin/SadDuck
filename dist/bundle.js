@@ -3339,7 +3339,7 @@ let elapsedTime;
 let deltaTime;
 function play_single_sound() {
     var JukeBox = new AudioContext();
-    fetch('music/02_Green_Greens.mp3')
+    fetch('music/Kevin_MacLeod_Fluffing_a_Duck.mp3')
         .then(r => r.arrayBuffer())
         .then(b => JukeBox.decodeAudioData(b))
         .then(data => {
@@ -3352,7 +3352,7 @@ function play_single_sound() {
     console.log(`Music On!`);
 }
 function main() {
-    //play_single_sound();
+    play_single_sound();
     elapsedTime = 0.0;
     oldTime = Date.now();
     // Initial display for framerate
