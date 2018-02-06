@@ -11,6 +11,7 @@
 ## Live Demo
 
 * [Live Demo Link](https://byumjin.github.io/SadDuck/)
+* [Shader Toy](https://www.shadertoy.com/view/4sdcz8)
 
 To compare this with the reference without extra credit features, please turn "PureDuck" option on.  
 
