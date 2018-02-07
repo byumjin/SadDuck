@@ -4,7 +4,7 @@
 * pennkey : byumjin
 * name : [Byumjin Kim](https://github.com/byumjin)
 
-[![](Images/main.png)]](https://www.shadertoy.com/view/4sdcz8)
+[![](Images/main.png)](https://www.shadertoy.com/view/4sdcz8)
 
 
 ## Live Demo
