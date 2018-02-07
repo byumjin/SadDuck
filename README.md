@@ -4,10 +4,9 @@
 * pennkey : byumjin
 * name : [Byumjin Kim](https://github.com/byumjin)
 
-[![](Images/main.png)](https://www.shadertoy.com/view/4sdcz8)
-
-
 ## Live Demo
+
+[![](Images/main.png)](https://www.shadertoy.com/view/4sdcz8)
 
 * [Shader Toy](https://www.shadertoy.com/view/4sdcz8)
 * [WebGL Link](https://byumjin.github.io/SadDuck/)
