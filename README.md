@@ -4,12 +4,13 @@
 * pennkey : byumjin
 * name : [Byumjin Kim](https://github.com/byumjin)
 
-<iframe width="640" height="360" frameborder="0" src="https://www.shadertoy.com/embed/4sdcz8?gui=true&t=10&paused=true&muted=false" allowfullscreen></iframe>
+[![](Images/main.png)]](https://www.shadertoy.com/view/4sdcz8)
+
 
 ## Live Demo
 
-* [Live Demo Link](https://byumjin.github.io/SadDuck/)
 * [Shader Toy](https://www.shadertoy.com/view/4sdcz8)
+* [WebGL Link](https://byumjin.github.io/SadDuck/)
 
 To compare this with the reference without extra credit features, please turn "PureDuck" option on.  
 
